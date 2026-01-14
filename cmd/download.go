@@ -7,6 +7,7 @@ import (
 
 	"github.com/avast/retry-go"
 	"github.com/majd/ipatool/v2/pkg/appstore"
+	"github.com/majd/ipatool/v2/pkg/util/ipa"
 	"github.com/schollz/progressbar/v3"
 	"github.com/spf13/cobra"
 )
@@ -19,6 +20,7 @@ func downloadCmd() *cobra.Command {
 		appID             int64
 		bundleID          string
 		externalVersionID string
+		urlScheme         bool
 	)
 
 	cmd := &cobra.Command{
@@ -90,13 +92,31 @@ func downloadCmd() *cobra.Command {
 					)
 				}
 
+				if urlScheme {
+					outputPath = "tmp.ipa"
+				}
+
 				out, err := dependencies.AppStore.Download(appstore.DownloadInput{
 					Account: acc, App: app, OutputPath: outputPath, Progress: progress, ExternalVersionID: externalVersionID})
 				if err != nil {
 					return err
 				}
 
-				err = dependencies.AppStore.ReplicateSinf(appstore.ReplicateSinfInput{Sinfs: out.Sinfs, PackagePath: out.DestinationPath})
+				if urlScheme {
+					err := ipa.PrintURLSchemesFromIPA(out.DestinationPath)
+					if err != nil {
+						return err
+					}
+
+					return nil
+				}
+
+				err = dependencies.AppStore.ReplicateSinf(
+					appstore.ReplicateSinfInput{
+						Sinfs:       out.Sinfs,
+						PackagePath: out.DestinationPath,
+					},
+				)
 				if err != nil {
 					return err
 				}
@@ -135,6 +155,7 @@ func downloadCmd() *cobra.Command {
 	cmd.Flags().StringVarP(&outputPath, "output", "o", "", "The destination path of the downloaded app package")
 	cmd.Flags().StringVar(&externalVersionID, "external-version-id", "", "External version identifier of the target iOS app (defaults to latest version when not specified)")
 	cmd.Flags().BoolVar(&acquireLicense, "purchase", false, "Obtain a license for the app if needed")
+	cmd.Flags().BoolVarP(&urlScheme, "url-scheme", "u", false, "Print app URL schemes (CFBundleURLSchemes)")
 
 	return cmd
 }

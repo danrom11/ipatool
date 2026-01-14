@@ -133,6 +133,7 @@ Flags:
   -h, --help                         help for download
   -o, --output string                The destination path of the downloaded app package
       --purchase                     Obtain a license for the app if needed
+  -u, --url-scheme                   Print app URL schemes (CFBundleURLSchemes)
 
 Global Flags:
       --format format                sets output format for command; can be 'text', 'json' (default text)
